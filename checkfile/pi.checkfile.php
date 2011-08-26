@@ -46,6 +46,30 @@ class Checkfile {
 		$this->EE =& get_instance();
 	}
 	
+	public function file(){
+			$file = $this->EE->TMPL->fetch_param('file');
+			$remove = $this->EE->TMPL->fetch_param('remove');	
+			$path_a = $this->EE->TMPL->fetch_param('path_a');
+			$path_b = $this->EE->TMPL->fetch_param('path_b');
+			$no_file = $this->EE->TMPL->fetch_param('no_file');
+			
+			//Remove anything we don't want from the file string
+			$file = str_replace($remove,"",$file);
+			$path_a = $path_a . $file;
+			$path_b = $path_b . $file;						
+			
+			//If File Exists : Use Path A
+			if (file_exists($path_a)){
+				return $path_a;
+			} elseif(file_exists($path_b)) {
+				//If File Does NOT Exist : Use Path B
+				return $path_b;
+			} else {			
+				//What? Still No File!! : Use No_File
+				return $no_file;						
+			}
+	}
+	
 	// ----------------------------------------------------------------
 	
 	/**
