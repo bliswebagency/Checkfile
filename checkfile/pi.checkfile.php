@@ -46,6 +46,24 @@ class Checkfile {
 		$this->EE =& get_instance();
 	}
 	
+	function url_exists($url){
+        $url = str_replace("http://", "", $url);
+        if (strstr($url, "/")) {
+            $url = explode("/", $url, 2);
+            $url[1] = "/".$url[1];
+        } else {
+            $url = array($url, "/");
+        }
+
+        $fh = fsockopen($url[0], 80);
+        if ($fh) {
+            fputs($fh,"GET ".$url[1]." HTTP/1.1\nHost:".$url[0]."\n\n");
+            if (fread($fh, 22) == "HTTP/1.1 404 Not Found") { return FALSE; }
+            else { return TRUE;    }
+
+        } else { return FALSE;}
+    }
+	
 	public function file(){
 			$file = $this->EE->TMPL->fetch_param('file');
 			$remove = $this->EE->TMPL->fetch_param('remove');	
@@ -54,21 +72,47 @@ class Checkfile {
 			$no_file = $this->EE->TMPL->fetch_param('no_file');
 			
 			//Remove anything we don't want from the file string
+			$current_domain = "http://" . $_SERVER['HTTP_HOST'];
 			$file = str_replace($remove,"",$file);
+			/* REMOTE MODE
+			if (!stristr($path_a,"http://")){
+				$path_a = $current_domain . $path_a;
+			}
+			if (!stristr($path_b,"http://")){
+				$path_b = $current_domain . $path_b;
+			}
+			*/
+			//Keep our paths without files
+			$path_A = $path_a;
+			$path_B = $path_b;
+			
+			//The lower version gets the file
 			$path_a = $path_a . $file;
 			$path_b = $path_b . $file;						
-			
+
 			//If File Exists : Use Path A
-			if (file_exists($path_a)){
-				return $path_a;
-			} elseif(file_exists($path_b)) {
-				//If File Does NOT Exist : Use Path B
-				return $path_b;
+			if (file_exists($_SERVER['DOCUMENT_ROOT'].$path_a)){
+				#return $path_a;
+				return "";
+			} elseif($this->url_exists($path_b)) {
+				//If File Does NOT Exist : Copy Path B to Path A
+
+
+				$content = file_get_contents($path_b);
+				$dir = dirname($_SERVER['SCRIPT_FILENAME']);
+				$fp = fopen($_SERVER['DOCUMENT_ROOT'].$path_a, 'w');
+				fwrite($fp, $content);
+				fclose($fp);
+				
+				#return $path_b;
+				return "";
 			} else {			
 				//What? Still No File!! : Use No_File
 				return $no_file;						
 			}
 	}
+	
+	
 	
 	// ----------------------------------------------------------------
 	
