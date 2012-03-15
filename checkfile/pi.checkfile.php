@@ -26,7 +26,7 @@
 
 $plugin_info = array(
 	'pi_name'		=> 'Checkfile',
-	'pi_version'	=> '1.0',
+	'pi_version'	=> '1.0.2 beta',
 	'pi_author'		=> 'Blis Web Agency',
 	'pi_author_url'	=> 'http://blis.net.au',
 	'pi_description'=> 'Checks if a file exists, then falls back on a remote, then gives up!',
@@ -46,24 +46,6 @@ class Checkfile {
 		$this->EE =& get_instance();
 	}
 	
-	function url_exists($url){
-        $url = str_replace("http://", "", $url);
-        if (strstr($url, "/")) {
-            $url = explode("/", $url, 2);
-            $url[1] = "/".$url[1];
-        } else {
-            $url = array($url, "/");
-        }
-
-        $fh = fsockopen($url[0], 80);
-        if ($fh) {
-            fputs($fh,"GET ".$url[1]." HTTP/1.1\nHost:".$url[0]."\n\n");
-            if (fread($fh, 22) == "HTTP/1.1 404 Not Found") { return FALSE; }
-            else { return TRUE;    }
-
-        } else { return FALSE;}
-    }
-	
 	public function file(){
 			$file = $this->EE->TMPL->fetch_param('file');
 			$remove = $this->EE->TMPL->fetch_param('remove');	
@@ -76,14 +58,9 @@ class Checkfile {
 			//Remove anything we don't want from the file string
 			$current_domain = "http://" . $_SERVER['HTTP_HOST'];
 			$file = str_replace($remove,"",$file);
-			/* REMOTE MODE
-			if (!stristr($path_a,"http://")){
-				$path_a = $current_domain . $path_a;
-			}
-			if (!stristr($path_b,"http://")){
-				$path_b = $current_domain . $path_b;
-			}
-			*/
+			$path_a = str_replace($remove,"",$path_a);
+			$path_b = str_replace($remove,"",$path_b);
+
 			//Keep our paths without files
 			$path_A = $path_a;
 			$path_B = $path_b;
@@ -99,15 +76,9 @@ class Checkfile {
 			if (file_exists($_SERVER['DOCUMENT_ROOT'].$path_a)){
 				if ($output == "true") return $path_a;
 				else return "";
-			} elseif($this->url_exists($path_b)) {
+			} elseif(file_exists($_SERVER['DOCUMENT_ROOT'].$path_b)) {
 				//If File Does NOT Exist : Copy Path B to Path A
-
-
-				$content = file_get_contents($path_b);
-				$dir = dirname($_SERVER['SCRIPT_FILENAME']);
-				$fp = fopen($_SERVER['DOCUMENT_ROOT'].$path_a, 'w');
-				fwrite($fp, $content);
-				fclose($fp);
+				copy($_SERVER['DOCUMENT_ROOT'].$path_b, $_SERVER['DOCUMENT_ROOT'].$path_a);
 				
 				if ($output == "true") return $path_b;
 				else return "";
