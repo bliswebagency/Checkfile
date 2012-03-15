@@ -70,7 +70,9 @@ class Checkfile {
 			$path_a = $this->EE->TMPL->fetch_param('path_a');
 			$path_b = $this->EE->TMPL->fetch_param('path_b');
 			$no_file = $this->EE->TMPL->fetch_param('no_file');
-			
+			$remote = $this->EE->TMPL->fetch_param('remote');
+			$output = $this->EE->TMPL->fetch_param('output');
+						
 			//Remove anything we don't want from the file string
 			$current_domain = "http://" . $_SERVER['HTTP_HOST'];
 			$file = str_replace($remove,"",$file);
@@ -90,10 +92,13 @@ class Checkfile {
 			$path_a = $path_a . $file;
 			$path_b = $path_b . $file;						
 
+    if ($remote == ""){
+	        //EVERYTHING HAPPENS ON THE ONE DOMAIN
+	
 			//If File Exists : Use Path A
 			if (file_exists($_SERVER['DOCUMENT_ROOT'].$path_a)){
-				#return $path_a;
-				return "";
+				if ($output == "true") return $path_a;
+				else return "";
 			} elseif($this->url_exists($path_b)) {
 				//If File Does NOT Exist : Copy Path B to Path A
 
@@ -104,13 +109,40 @@ class Checkfile {
 				fwrite($fp, $content);
 				fclose($fp);
 				
-				#return $path_b;
-				return "";
+				if ($output == "true") return $path_b;
+				else return "";
 			} else {			
 				//What? Still No File!! : Use No_File
-				return $no_file;						
+				if ($output == "true") return $no_file;
+				else return "";						
 			}
+	} else {
+		
+		//OK, WE'RE GOING CROSS DOMAIN		
+		$header_response_b = get_headers($path_b, 1);
+		if (file_exists($_SERVER['DOCUMENT_ROOT'].$path_a)){
+		    // FILE A EXISTS, RUN WITH THAT
+		    if ($output == "true") return $path_a;
+		    else return "";
+		} elseif ( strpos( $header_response_b[0], "404" ) === false ){
+			// FILE B EXISTS, USE THIS
+			copy($path_b, $_SERVER['DOCUMENT_ROOT'].$path_a);
+			if ($output == "true") return $path_b;
+			else return "";
+			
+		}
+		else 
+		{
+		    // NO FILE EXISTS!!
+		    if ($output == "true") return $no_file;
+	 	    else return "";
+		}
+		
 	}
+	
+	
+	
+}
 	
 	
 	
@@ -124,12 +156,10 @@ class Checkfile {
 		ob_start();
 ?>
 
-This plugin is designed for people who have a files which are in one place which really need to be in another. Here's how it works.
+This plugin is designed for people who have a files which are in one place which really need to be in another.
 
-First, it checks if the files are where you want them on Server A.
-If not, it checks Server B. If it finds them there, it copies them to where they need to be on Server A.
 
-Failing this, will then either serve a default file (e.g. "no-image.jpg") or nothing at all.
+
 <?php
 		$buffer = ob_get_contents();
 		ob_end_clean();

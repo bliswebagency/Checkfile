@@ -1,0 +1,44 @@
+Checkfile "checks" if a file exists in a certain location on your "localhost". This is a path within the current domain. If the file doesn't exist, you can get Checkfile to pull it in from a different source. This can either be locally or via a different domain.
+
+EXAMPLE 1: Local Source
+In this example we have an image we're expecting to be located in our "/images" folder. If it's not there, it pulls it in from "/uploads".
+
+{exp:checkfile:file path_a="/images/file.jpg" path_b="/uploads/file.jpg"}
+
+We can take this one step further and provide a default image should the file not be located in either location.
+
+{exp:checkfile:file path_a="/images/file.jpg" path_b="/uploads/file.jpg" no_file="/images/no_file.jpg"}
+
+EXAMPLE 2: Remote Source
+In this example we have an image we're expecting to be located in our "/images" folder. If it's not there, it pulls it in from "http://secretserver.com/uploads".
+
+{exp:checkfile:file path_a="/images/file.jpg" path_b="http://secretserver.com/uploads/file.jpg" remote="true"}
+
+When dealing with remote servers, you'll need to be aware that the page loading time will be delayed, especially if the file isn't found on the remote server.
+
+If the file is found on the remote server, it is then copied across to your local server in the exact location specified in "path_a". For this reason, "path_a" must always be a local path.
+
+EXAMPLE 3: Outputting which source Checkfile has found
+In some cases, you may wish to use Checkfile to produce a path you can use in your page. By using the same line of code shown in EXAMPLE 2 but with the "output" parameter, we can then do something like this:
+
+<img src="{exp:checkfile:file path_a='/images/file.jpg' path_b='http://secretserver.com/uploads/file.jpg' remote='true' output='true'}" alt="my image" />
+
+Should the image not be found locally, the initial source will be the external file the first time this is run. After this point, it will used the local file which has been copied over from the remote host.
+
+EXAMPLE 4: Using an ExpressionEngine variable within Checkfile
+All this stuff is great but you probably want to dynamically reference files which have been referenced in some way within a Channel. By using the "parse" parameter, you can get Checkfile to process your EE tags within it's parameter values.
+
+{exp:channel:entries channel="files"}
+
+{exp:checkfile:file path_a="/images/{file}" path_b="http://secretserver.com/uploads/{file}" remote="true" parse="inward"}
+
+{/exp:channel:entries}
+
+If you are using the EE File Manager or Assets, it will also throw in the full path to this file. This can destroy the way you need to reference your files using Checkfile so we've included a "remove" parameter which will allow you to instruct EE to remove a string from the dynamic variable output. For example: if you have an Upload Path defined in EE of "http://mysite.com/assets/" and you expect the file you need will actually be on the remote server, you can do something like this:
+
+{exp:checkfile:file path_a="/images/{file}" path_b="http://secretserver.com/uploads/{file}" remote="true" parse="inward" remove="http://mysite.com/assets/"}
+
+One last thing. In order for this plugin to copy the file from the remote server to your local server, you need to have PHP5 and "HTTP stream wrapper" enabled. You'll also find that if you don't set the permissions on your local image folder to writable (e.g. 777), you'll run into a few issues.
+
+
+
